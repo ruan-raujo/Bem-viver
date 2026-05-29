@@ -1,0 +1,425 @@
+<template>
+  <div class="login-wrapper">
+    <div class="login-container">
+
+      <div class="brand">
+        <img src="@/assets/images/logo.png" alt="Logo Bem-viver" class="logo" />
+        <span class="brand-name">Bem-viver</span>
+        <p>{{ isLogin ? 'Cuidado digital para o seu bem-estar.' : 'Preencha os dados para se cadastrar' }}</p>
+      </div>
+
+      <div class="login-card">
+
+        <form @submit.prevent="handleSubmit" class="form-content">
+
+          <div class="input-group" v-if="!isLogin">
+            <label for="name">Nome completo</label>
+            <input
+              id="name"
+              v-model="formData.name"
+              type="text"
+              placeholder="Seu nome"
+              required
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="email">E-mail</label>
+            <input
+              id="email"
+              v-model="formData.email"
+              type="email"
+              placeholder="nome@exemplo.com"
+              required
+            />
+          </div>
+
+          <div class="input-group">
+            <div class="label-row">
+              <label for="password">Senha</label>
+              <button type="button" class="form-link" @click="recoverPasswordModal = true">
+                {{ isLogin ? 'Recuperar senha' : 'Dúvidas sobre a senha?' }}
+              </button>
+            </div>
+            <input
+              id="password"
+              v-model="formData.password"
+              type="password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn-primary">
+            {{ isLogin ? 'Entrar' : 'Cadastrar' }}
+          </button>
+        </form>
+
+        <div class="divider-row">
+          <div class="divider-line"></div>
+          <span class="divider-text">ou</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="login-promo">
+          <p>
+            {{ isLogin ? 'Não possui uma conta?' : 'Já possui uma conta?' }}
+            <button type="button" @click="toggleMode" class="btn-link">
+              {{ isLogin ? 'Solicitar acesso' : 'Faça login' }}
+            </button>
+          </p>
+        </div>
+      </div>
+       <div class="login-footer">
+          <div class="legal-links">
+            <a href="#">Termos de Uso</a>
+            <a href="#">Privacidade</a>
+            <a href="#">Suporte ao Usuário</a>
+          </div>
+        </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive } from 'vue'
+
+const isLogin = ref(true)
+
+const formData = reactive({
+  name: '',
+  email: '',
+  password: ''
+})
+
+const recoverPasswordModal = ref(false)
+
+const toggleMode = () => {
+  isLogin.value = !isLogin.value
+  formData.name = ''
+  formData.email = ''
+  formData.password = ''
+}
+
+const handleSubmit = () => {
+  if (isLogin.value) {
+    console.log('Login:', { email: formData.email, password: formData.password })
+    alert(`Tentativa de Login com: ${formData.email}`)
+  } else {
+    console.log('Cadastro:', { name: formData.name, email: formData.email, password: formData.password })
+    alert(`Tentativa de Cadastro para: ${formData.name}`)
+  }
+}
+</script>
+
+<style scoped>
+
+/* ── Reset Global para evitar barras de rolagem ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* ── Tela cheia ── */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  padding: 1rem;
+  font-family: sans-serif;
+}
+
+/* ── Coluna central: brand + card ── */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  gap: 1.5rem;
+}
+
+/* ── Brand: logo + nome lado a lado ── */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1E40AF;
+  letter-spacing: -0.02em;
+}
+
+.brand p {
+  color: #6b7280;
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+}
+
+/* ── Card ── */
+.login-card {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 2rem;
+}
+
+/* ── Formulário ── */
+.form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Layout da linha da Senha (NOVO) ── */
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.label-row label {
+  margin-bottom: 0;
+}
+
+.input-group label {
+  display: block;
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: max(16px, 1rem); /* evita zoom no iOS */
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-group input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* ── Botão primário ── */
+.btn-primary {
+  width: 100%;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-primary:active {
+  background-color: #1e40af;
+  transform: scale(0.99);
+}
+
+/* ── Divisor "ou" (CORRIGIDO) ── */
+.divider-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 1.5rem 0;
+}
+
+.divider-line {
+  height: 1px;
+  flex-grow: 1;
+  background-color: #d1d5db;
+}
+
+.divider-text {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #6b7280;
+  text-transform: none; /* Garante que fique minúsculo */
+}
+
+/* ── Rodapé ── */
+.login-promo {
+  text-align: center;
+}
+
+.login-promo p {
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+  color: #4b5563;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.25rem;
+  font-size: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* Link Recuperar Senha (NOVO) */
+.form-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.25rem;
+  font-size: 0.775rem;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.form-link:hover {
+  text-decoration: underline;
+}
+
+.login-footer {
+  color: #6b7280;
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+}
+
+.legal-links {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 0.75rem;
+}
+.legal-links a {
+  color: #475861;
+  text-decoration: none;
+}
+.legal-links a:hover {
+  color: #1e40af;
+}
+
+/* ── Responsivo ── */
+
+/* Telas muito pequenas */
+@media (max-width: 360px) {
+  .login-card {
+    padding: 1.25rem;
+    border-radius: 0.5rem;
+  }
+
+  .form-content {
+    gap: 1rem;
+  }
+
+  .brand-name {
+    font-size: 1.2rem;
+  }
+
+  .logo {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Smartphones */
+@media (max-width: 480px) {
+  .login-wrapper {
+    align-items: flex-start;
+    padding-top: 2.5rem;
+  }
+
+  .login-container {
+    gap: 1.25rem;
+  }
+
+  .login-card {
+    padding: 1.5rem;
+    border-radius: 0.625rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Tablets */
+@media (min-width: 481px) and (max-width: 768px) {
+  .login-container {
+    max-width: 440px;
+  }
+
+  .login-card {
+    padding: 2rem 2.5rem;
+  }
+}
+
+/* Landscape com tela baixa */
+@media (max-height: 500px) and (orientation: landscape) {
+  .login-wrapper {
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .login-container {
+    gap: 0.75rem;
+  }
+
+  .login-card {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .brand-name {
+    font-size: 1.1rem;
+  }
+
+  .form-content {
+    gap: 0.75rem;
+  }
+}
+</style>
+
+```
