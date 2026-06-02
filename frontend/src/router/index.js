@@ -13,9 +13,23 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: DashboardLayout
+      component: DashboardLayout,
+      meta: { requiresAuth: true }
     }
   ]
+})
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('tokenBemViver')
+  const paginaProtegida = to.matched.some(record => record.meta.requiresAuth)
+  
+  if (paginaProtegida && !token) {
+    next('/')
+  } else if (to.path === '/' && token) {
+    next('/dashboard')
+  } else {
+    next()
+  }
 })
 
 export default router
