@@ -84,6 +84,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
@@ -107,65 +108,39 @@ const toggleMode = () => {
 const handleSubmit = async () => {
   if (isLogin.value) {
     try {
-      const resposta = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: formData.email, 
-          senha: formData.password
-        }),
+      const resposta = await axios.post('http://localhost:3000/api/auth/login', {
+        email: formData.email, 
+        senha: formData.password
       });
 
-      const dados = await resposta.json();
-
-      if (!resposta.ok) {
-        alert(dados.message || 'Erro ao fazer login.');
-        return;
-      }
-      // Guarda o token no navegador para acessar rotas protegidas depois
-      localStorage.setItem('tokenBemViver', dados.token);
-
-      router.push('/dashboard'); // Redireciona para o dashboard após login bem-sucedido
+      localStorage.setItem('tokenBemViver', resposta.data.token);
+      router.push('/dashboard'); 
 
     } catch (erro) {
       console.error('Erro na requisição de login:', erro);
-      alert('Erro ao conectar com o servidor.');
+      const mensagemErro = erro.response?.data?.message || 'Erro ao conectar com o servidor.';
+      alert(mensagemErro);
     }
 
   } else {
     try {
-      const resposta = await fetch('http://localhost:3000/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          nome: formData.name,
-          email: formData.email, 
-          senha: formData.password
-        }),
+      const resposta = await axios.post('http://localhost:3000/api/users', {
+        nome: formData.name,
+        email: formData.email,
+        senha: formData.password
       });
 
-      const dados = await resposta.json();
-
-      if (!resposta.ok) {
-        alert(dados.message || 'Erro ao cadastrar.');
-        return;
-      }
-
-      // Sucesso no Cadastro!
       alert('Cadastro realizado com sucesso! Agora você pode fazer login.');
-      
-      // Limpa a senha e muda a aba para "Login"
-      formData.password = '';
-      isLogin.value = true; 
+
+      formData.password = ''
+      isLogin.value = true
 
     } catch (erro) {
       console.error('Erro na requisição de cadastro:', erro);
-      alert('Erro ao conectar com o servidor.');
+      const mensagemErro = erro.response?.data?.message || 'Erro ao cadastrar.';
+      alert(mensagemErro);
     }
+
   }
 }
 </script>
