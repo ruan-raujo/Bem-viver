@@ -5,13 +5,10 @@ import PanelTab from '../components/tabs/PanelTab.vue';
 import AssistantTab from '../components/tabs/AssistantTab.vue';
 import { useRouter } from 'vue-router';
 
-// Extraímos apenas o necessário do nosso composable
 const { currentTab, profile, isLoading, carregarDadosDoUsuario } = useHealthData();
 const router = useRouter();
 
 onMounted(async () => {
-  // Como o Router já bloqueou quem não tem acesso, 
-  // aqui só nos preocupamos em ir buscar os dados do utilizador à API!
   await carregarDadosDoUsuario();
 });
 
@@ -61,13 +58,13 @@ const logout = () => {
             <span>Dashboard</span>
           </button>
 
-        <button 
-          @click="currentTab = 'assistant'" 
-          :class="['nav-button', currentTab === 'assistant' ? 'nav-button-active' : 'nav-button-inactive']"
-        >
-          <img src="@/assets/images/prancheta.png" alt="logo" width="25" />
-          <span>Registrar</span>
-        </button>
+          <button 
+            @click="currentTab = 'registar'" 
+            :class="['nav-button', currentTab === 'registar' ? 'nav-button-active' : 'nav-button-inactive']"
+          >
+            <img src="@/assets/images/prancheta.png" alt="logo" width="25" />
+            <span>Registrar</span>
+          </button>
 
           <button 
             @click="currentTab = 'historico'" 
@@ -86,13 +83,12 @@ const logout = () => {
           </button>
         </aside>
 
-      <main class="content-panel">
-        <PanelTab v-if="currentTab === 'panel'" />
-        <AssistantTab v-if="currentTab === 'assistant'" />
-      </main>
-    </div>
-  </div>
-</template>
+        <main class="content-panel">
+          <PanelTab v-if="currentTab === 'dashboard'" />
+          
+          <AssistantTab v-if="currentTab === 'registar'" />
+        </main>
+      </div> </div> </div> </template>
 
 <style scoped>
 @import '../assets/styles/views/dashboard.css';
