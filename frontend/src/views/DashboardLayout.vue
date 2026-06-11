@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useHealthData } from '../composables/useHealthData';
 import PanelTab from '../components/tabs/PanelTab.vue';
+import AssistantTab from '../components/tabs/AssistantTab.vue';
 import { useRouter } from 'vue-router';
 
 // IMPORTANTE: Para que a alternância funcione por completo, certifique-se de importar 
@@ -58,7 +59,7 @@ const logout = () => {
           :class="['nav-button', currentTab === 'assistant' ? 'nav-button-active' : 'nav-button-inactive']"
         >
           <img src="@/assets/images/prancheta.png" alt="logo" width="25" />
-          <span>Registros</span>
+          <span>Registrar</span>
         </button>
 
         <button 
@@ -80,6 +81,7 @@ const logout = () => {
 
       <main class="content-panel">
         <PanelTab v-if="currentTab === 'panel'" />
+        <AssistantTab v-if="currentTab === 'assistant'" />
       </main>
     </div>
   </div>

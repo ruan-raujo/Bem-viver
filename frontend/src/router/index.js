@@ -14,7 +14,7 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardLayout,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: false }
     }
   ]
 })
