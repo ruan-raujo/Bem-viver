@@ -29,19 +29,6 @@
   font-weight: 500;
 }
 
-.date-badge {
-  background-color: var(--surface-container);
-  border: 1px solid var(--outline-light);
-  border-radius: var(--radius-lg);
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  align-self: flex-start;
-}
-
 .metrics-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -92,43 +79,6 @@
   margin-top: 8px;
   font-family: monospace;
 }
-.metric-footer {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--outline-light);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.status-text-lbl {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--outline);
-}
-
-.status-badge-val {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 9999px;
-}
-
-.status-badge-val.normal {
-  background-color: #C2EDCC;
-  color: #476D52;
-}
-
-.status-badge-val.attention {
-  background-color: #ffe8ca;
-  color: #7c4d05;
-}
-
-.status-badge-val.critical {
-  background-color: var(--error-container);
-  color: var(--error-text);
-}
-
 .split-grid {
   display: grid;
   grid-template-columns: 1fr;
