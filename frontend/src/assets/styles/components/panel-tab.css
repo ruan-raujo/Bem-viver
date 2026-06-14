@@ -1,14 +1,21 @@
+/* ==============================================================
+   ESTRUTURA PRINCIPAL (CORREÇÃO DO BURACO)
+============================================================== */
 .panel-content {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start; /* Força todo o conteúdo para o topo */
   gap: 24px;
+  height: max-content; /* Impede que o painel estique até o final da tela */
+  min-height: 0;
 }
 
 .greeting-section {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start; /* Removido o space-between que criava espaços indesejados */
+  gap: 8px;
+  margin-top: 0;
 }
 
 @media (min-width: 576px) {
@@ -21,36 +28,34 @@
 .greeting-text-title {
   font-size: 1.5rem;
   font-weight: 800;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .greeting-text-subtitle {
   font-size: 0.875rem;
   color: var(--text-muted);
   font-weight: 500;
+  margin: 4px 0 0 0;
 }
 
-.date-badge {
-  background-color: var(--surface-container);
-  border: 1px solid var(--outline-light);
-  border-radius: var(--radius-lg);
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  align-self: flex-start;
-}
-
+/* ==============================================================
+   GRELHA RESPONSIVA DOS SINAIS VITAIS
+============================================================== */
 .metrics-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
+  width: 100%;
 }
 
-@media (min-width: 576px) {
+@media (max-width: 576px) {
   .metrics-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr; /* Força 1 coluna em celulares muito pequenos */
+  }
+
+  .metric-card {
+    padding: 18px;
   }
 }
 
@@ -61,10 +66,11 @@
   padding: 24px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   box-shadow: var(--shadow-sm);
   position: relative;
-  transition: var(--transition);
+  transition: var(--transition, 0.2s ease);
+  width: 100%; 
 }
 
 .metric-card:hover {
@@ -83,6 +89,7 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  display: block;
 }
 
 .metric-value-txt {
@@ -92,47 +99,15 @@
   margin-top: 8px;
   font-family: monospace;
 }
-.metric-footer {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--outline-light);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
 
-.status-text-lbl {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--outline);
-}
-
-.status-badge-val {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 9999px;
-}
-
-.status-badge-val.normal {
-  background-color: #C2EDCC;
-  color: #476D52;
-}
-
-.status-badge-val.attention {
-  background-color: #ffe8ca;
-  color: #7c4d05;
-}
-
-.status-badge-val.critical {
-  background-color: var(--error-container);
-  color: var(--error-text);
-}
-
+/* ==============================================================
+   GRELHA DIVIDIDA (MEDICAÇÕES E CONSELHEIRO)
+============================================================== */
 .split-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
+  align-items: start; /* Impede que uma coluna estique a outra */
 }
 
 @media (min-width: 992px) {
@@ -146,6 +121,7 @@
   border: 1px solid var(--outline-light);
   border-radius: var(--radius-xl);
   padding: 24px;
+  width: 100%;
 }
 
 .card-title-row {
@@ -164,6 +140,7 @@
 .card-heading-title {
   font-size: 1.125rem;
   font-weight: 800;
+  margin: 0;
 }
 
 .card-badge-count {
@@ -172,6 +149,9 @@
   color: var(--text-muted);
 }
 
+/* ==============================================================
+   LISTA DE MEDICAÇÕES
+============================================================== */
 .pill-med-list {
   display: flex;
   flex-direction: column;
@@ -186,7 +166,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  transition: var(--transition);
+  transition: var(--transition, 0.2s ease);
 }
 
 .med-row-card.taken {
@@ -208,6 +188,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0; /* Impede o ícone de esmagar */
 }
 
 .med-row-card.taken .med-icon-box {
@@ -223,13 +204,15 @@
 .med-detail-name {
   font-weight: 700;
   font-size: 0.875rem;
+  display: block;
 }
 
 .med-detail-meta {
   font-size: 0.75rem;
   color: var(--text-muted);
   font-weight: 500;
-  margin-top: 2px;
+  margin-top: 4px;
+  display: block;
 }
 
 .btn-checkbox-pill {
@@ -242,8 +225,10 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  transition: var(--transition);
+  transition: var(--transition, 0.2s ease);
+  flex-shrink: 0;
 }
 
 .btn-checkbox-pill.taken {
@@ -257,9 +242,12 @@
 }
 
 .btn-checkbox-pill:not(.taken):hover {
-  background-color: var(--primary-hover);
+  background-color: var(--primary-hover, #0d1424);
 }
 
+/* ==============================================================
+   CONSELHEIRO (COMPANION ADVISER)
+============================================================== */
 .companion-adviser-card {
   display: flex;
   flex-direction: column;
@@ -268,7 +256,7 @@
 }
 
 .wisdom-box {
-  background-color: var(--surface-container-low);
+  background-color: var(--surface-container-low, #f8fafc);
   padding: 16px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--outline-light);
@@ -290,6 +278,7 @@
   color: var(--primary);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   cursor: pointer;
 }
@@ -298,16 +287,14 @@
   text-decoration: underline;
 }
 
+/* ==============================================================
+   GRELHA RESPONSIVA DOS ALERTAS / CONSULTAS
+============================================================== */
 .alert-strip-row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
-}
-
-@media (min-width: 768px) {
-  .alert-strip-row {
-    grid-template-columns: 1fr 1fr;
-  }
+  width: 100%;
 }
 
 .appointment-strip {
@@ -318,6 +305,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  width: 100%;
 }
 
 .appointment-icon-box {
@@ -337,11 +325,14 @@
   font-weight: 700;
   color: var(--outline);
   text-transform: uppercase;
+  display: block;
 }
 
 .appointment-meta-title {
   font-weight: 800;
   font-size: 0.875rem;
+  display: block;
+  margin-top: 4px;
 }
 
 .appointment-meta-desc {
