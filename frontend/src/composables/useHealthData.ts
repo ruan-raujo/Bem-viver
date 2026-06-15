@@ -106,10 +106,10 @@ export function useHealthData() {
     }
   };
 
-  const latestBP = computed(() => vitals.value.find(v => v.type === 'blood_pressure'));
-  const latestGlucose = computed(() => vitals.value.find(v => v.type === 'glucose'));
-  const latestHeartRate = computed(() => vitals.value.find(v => v.type === 'heart_rate'));
-  const latestWeight = computed(() => vitals.value.find(v => v.type === 'weight'));
+  const latestBP = computed(() => [...vitals.value].reverse().find(v => v.type === 'blood_pressure'));
+  const latestGlucose = computed(() => [...vitals.value].reverse().find(v => v.type === 'glucose'));
+  const latestHeartRate = computed(() => [...vitals.value].reverse().find(v => v.type === 'heart_rate'));
+  const latestWeight = computed(() => [...vitals.value].reverse().find(v => v.type === 'weight'));
 
   const takenMedsToday = computed(() => {
     const todayStr = new Date().toISOString().split('T')[0];
