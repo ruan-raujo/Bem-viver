@@ -3,6 +3,8 @@ import { onMounted } from 'vue';
 import { useHealthData } from '../composables/useHealthData';
 import PanelTab from '../components/tabs/PanelTab.vue';
 import AssistantTab from '../components/tabs/AssistantTab.vue';
+import HistoryTab from '../components/tabs/HistoryTab.vue';
+import GraphicsTab from '../components/tabs/ChartsTab.vue';
 import { useRouter } from 'vue-router';
 
 const { currentTab, profile, isLoading, carregarDadosDoUsuario } = useHealthData();
@@ -87,6 +89,8 @@ const logout = () => {
           <PanelTab v-if="currentTab === 'dashboard'" />
           
           <AssistantTab v-if="currentTab === 'registar'" />
+          <HistoryTab v-if="currentTab === 'historico'" />
+          <GraphicsTab v-if="currentTab === 'graficos'" />
         </main>
       </div> </div> </div> </template>
 
