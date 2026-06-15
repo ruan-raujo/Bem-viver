@@ -5,13 +5,13 @@ import { useHealthData } from '../../composables/useHealthData';
 const { showToast } = useHealthData();
 
 const form = ref({
-  // Meus Sinais Vitais
+
   pressao: '',
   glicemia: '',
   batimentos: '',
   peso: '',
   
-  // Meu Quadro Clínico (Condicionais)
+
   isDiabetico: null as boolean | null,
   tipoGlicemia: '',
   tomouInsulina: '',
@@ -19,7 +19,7 @@ const form = ref({
   isHipertenso: null as boolean | null,
   sintomasHipertensao: [] as string[],
   
-  // Minha Rotina e Bem-Estar
+ 
   adesaoMedica: '',
   justificativaAdesao: '',
   nivelDor: 0,
@@ -29,7 +29,7 @@ const form = ref({
 });
 
 const submeterFormulario = () => {
-  // Validação Geral: Evitar registros totalmente vazios
+
   if (!form.value.pressao && !form.value.glicemia && !form.value.batimentos && !form.value.peso) {
     showToast('Por favor, preencha pelo menos um dos seus sinais vitais básicos.');
     return;
