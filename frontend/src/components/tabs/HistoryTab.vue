@@ -1,68 +1,61 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useHealthData } from '../../composables/useHealthData';
 
-// Puxamos os dados globais do composable da sua equipe
-const { profile } = useHealthData();
+const { profile, vitals } = useHealthData();
 
-// Estado que controla qual registro está aberto em detalhe (null mostra a lista)
 const registroSelecionado = ref<any>(null);
 
-// Dados MOCADOS: Agora contendo exatamente as chaves do seu objeto 'form'
-const historicoRegistros = ref([
-  {
-    id: 1,
-    data_registro: '15/06/2026',
-    horario: '14:30',
-    
-    // Meus Sinais Vitais
-    pressao: '12/8',
-    glicemia: 95,
-    batimentos: 72,
-    peso: 74.2,
-    
-    // Meu Quadro Clínico
-    isDiabetico: true,
-    tipoGlicemia: 'jejum',
-    tomouInsulina: 'sim',
-    
-    isHipertenso: false,
-    sintomasHipertensao: [],
-    
-    // Minha Rotina e Bem-Estar
-    adesaoMedica: 'total',
-    justificativaAdesao: '',
-    qualidadeSono: 'excelente',
-    observacoes: 'Acordei bem e sem indisposição.'
-  },
-  {
-    id: 2,
-    data_registro: '14/06/2026',
-    horario: '09:15',
-    
-    // Meus Sinais Vitais
-    pressao: '14/9',
-    glicemia: 142,
-    batimentos: 88,
-    peso: 74.5,
-    
-    // Meu Quadro Clínico
-    isDiabetico: true,
-    tipoGlicemia: 'pos_prandial',
-    tomouInsulina: 'nao',
-    
-    isHipertenso: true,
-    sintomasHipertensao: ['cefaleia', 'tontura'],
-    
-    // Minha Rotina e Bem-Estar
-    adesaoMedica: 'parcial',
-    justificativaAdesao: 'Esqueci de tomar o remédio da manhã.',
-    qualidadeSono: 'regular',
-    observacoes: 'Apresentei pico de pressão e dor de cabeça leve.'
-  }
-]);
+const historicoRegistros = computed(() => {
+  const grupos: Record<string, any> = {};
 
-// Funções de clique
+  vitals.value.forEach(vital => {
+    const dataIso = vital.date;
+    
+    if (!grupos[dataIso]) {
+      const d = new Date(dataIso);
+      grupos[dataIso] = {
+        id: dataIso,
+        data_registro: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        horario: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        
+        // Sinais Vitais (preenchidos dinamicamente)
+        pressao: '',
+        glicemia: '',
+        batimentos: '',
+        peso: '',
+        
+        // Informações clínicas extras (como a nossa variável atual só guarda vitais, elas começam vazias)
+        isDiabetico: false,
+        tipoGlicemia: '',
+        tomouInsulina: '',
+        isHipertenso: false,
+        sintomasHipertensao: [],
+        adesaoMedica: '',
+        justificativaAdesao: '',
+        qualidadeSono: '',
+        observacoes: ''
+      };
+    }
+
+    if (vital.type === 'blood_pressure') {
+      grupos[dataIso].pressao = vital.value;
+    } else if (vital.type === 'glucose') {
+      grupos[dataIso].glicemia = vital.numericValue;
+      if (vital.notes && vital.notes.includes('Momento:')) {
+        grupos[dataIso].isDiabetico = true;
+        grupos[dataIso].tipoGlicemia = vital.notes.replace('Momento: ', '').trim();
+      }
+    } else if (vital.type === 'heart_rate') {
+      grupos[dataIso].batimentos = vital.numericValue;
+    } else if (vital.type === 'weight') {
+      grupos[dataIso].peso = vital.numericValue;
+    }
+  });
+
+  return Object.values(grupos).sort((a: any, b: any) => new Date(b.id).getTime() - new Date(a.id).getTime());
+});
+
 const selecionarRegistro = (registro: any) => {
   registroSelecionado.value = registro;
 };
@@ -71,7 +64,6 @@ const voltarParaLista = () => {
   registroSelecionado.value = null;
 };
 
-// Funções Tradutoras (Convertem o valor salvo no select/checkbox para texto legível)
 const traduzirSintoma = (sintoma: string) => {
   const dicionario: Record<string, string> = {
     cefaleia: 'Dor de cabeça forte',
