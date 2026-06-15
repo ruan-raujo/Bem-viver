@@ -4,6 +4,7 @@ import { useHealthData } from '../composables/useHealthData';
 import PanelTab from '../components/tabs/PanelTab.vue';
 import AssistantTab from '../components/tabs/AssistantTab.vue';
 import HistoryTab from '../components/tabs/HistoryTab.vue';
+import GraphicsTab from '../components/tabs/ChartsTab.vue';
 import { useRouter } from 'vue-router';
 
 const { currentTab, profile, isLoading, carregarDadosDoUsuario } = useHealthData();

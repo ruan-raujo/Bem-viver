@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useHealthData } from '../../composables/useHealthData';
+import axios from 'axios';
+import { useHealthData, type VitalRecord } from '../../composables/useHealthData';
 
-const { showToast } = useHealthData();
+const { showToast, vitals } = useHealthData();
 
 const form = ref({
-
   pressao: '',
   glicemia: '',
   batimentos: '',
   peso: '',
   
-
   isDiabetico: null as boolean | null,
   tipoGlicemia: '',
   tomouInsulina: '',
@@ -19,7 +18,6 @@ const form = ref({
   isHipertenso: null as boolean | null,
   sintomasHipertensao: [] as string[],
   
- 
   adesaoMedica: '',
   justificativaAdesao: '',
   nivelDor: 0,
@@ -28,35 +26,47 @@ const form = ref({
   observacoes: ''
 });
 
-const submeterFormulario = () => {
-
+const submeterFormulario = async () => {
   if (!form.value.pressao && !form.value.glicemia && !form.value.batimentos && !form.value.peso) {
     showToast('Por favor, preencha pelo menos um dos seus sinais vitais básicos.');
     return;
   }
 
-  // axios.post('http://localhost:3000/api/meu-registro', form.value);
-  
-  console.log('Dados do paciente prontos para o Back-end:', form.value);
+  try {
+    const token = localStorage.getItem('tokenBemViver');
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
-  showToast('Seus dados de saúde foram registrados com sucesso!');
+    await axios.post('http://localhost:3000/api/meu-registro', form.value, config);
 
-  form.value = {
-    pressao: '',
-    glicemia: '',
-    batimentos: '',
-    peso: '',
-    isDiabetico: null,
-    tipoGlicemia: '',
-    tomouInsulina: '',
-    isHipertenso: null,
-    sintomasHipertensao: [],
-    adesaoMedica: '',
-    justificativaAdesao: '',
-    nivelDor: 0,
-    qualidadeSono: '',
-    observacoes: ''
-  };
+    const dataAtual = new Date().toISOString();
+
+    if (form.value.pressao) {
+      vitals.value.push({ type: 'blood_pressure', date: dataAtual, value: form.value.pressao, numericValue: 0, status: 'normal' } as VitalRecord);
+    }
+    if (form.value.glicemia) {
+      vitals.value.push({ type: 'glucose', date: dataAtual, value: form.value.glicemia + ' mg/dL', numericValue: Number(form.value.glicemia), status: 'normal' } as VitalRecord);
+    }
+    if (form.value.batimentos) {
+      vitals.value.push({ type: 'heart_rate', date: dataAtual, value: form.value.batimentos + ' BPM', numericValue: Number(form.value.batimentos), status: 'normal' } as VitalRecord);
+    }
+    if (form.value.peso) {
+      vitals.value.push({ type: 'weight', date: dataAtual, value: form.value.peso + ' kg', numericValue: Number(form.value.peso), status: 'normal' } as VitalRecord);
+    }
+
+    showToast('Tudo certo! Registro salvo com sucesso.');
+
+    form.value = {
+      pressao: '', glicemia: '', batimentos: '', peso: '',
+      isDiabetico: null, tipoGlicemia: '', tomouInsulina: '',
+      isHipertenso: null, sintomasHipertensao: [],
+      adesaoMedica: '', justificativaAdesao: '', nivelDor: 0,
+      qualidadeSono: '', observacoes: ''
+    };
+
+  } catch (error) {
+    console.error('Erro ao salvar no servidor:', error);
+    showToast('Erro ao salvar. Verifique se o servidor está rodando.');
+  }
 };
 </script>
 
