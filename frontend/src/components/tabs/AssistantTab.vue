@@ -5,67 +5,98 @@ import { useHealthData, type VitalRecord } from '../../composables/useHealthData
 
 const { showToast, vitals } = useHealthData();
 
+// O formulário foi reestruturado para corresponder exatamente às chaves do modelo do Mongoose
 const form = ref({
-  pressao: '',
-  glicemia: '',
-  batimentos: '',
-  peso: '',
-  
-  isDiabetico: null as boolean | null,
-  tipoGlicemia: '',
-  tomouInsulina: '',
-  
-  isHipertenso: null as boolean | null,
-  sintomasHipertensao: [] as string[],
-  
-  adesaoMedica: '',
-  justificativaAdesao: '',
-  nivelDor: 0,
+  pressaoArterial: '',
+  glicemia: null as number | null,
+  frequenciaCardiaca: null as number | null,
+  peso: null as number | null,
+  possuiDiabetes: null as boolean | null,
+  possuiHipertensao: null as boolean | null,
+  tomouMedicamentosHoje: null as boolean | null,
   qualidadeSono: '',
   
+  // Campos auxiliares exclusivos da interface (ajustados abaixo)
+  tipoGlicemia: '',
+  tomouInsulina: '',
+  sintomasHipertensao: [] as string[],
+  justificativaAdesao: '',
   observacoes: ''
 });
 
 const submeterFormulario = async () => {
-  if (!form.value.pressao && !form.value.glicemia && !form.value.batimentos && !form.value.peso) {
-    showToast('Por favor, preencha pelo menos um dos seus sinais vitais básicos.');
+  if (
+    !form.value.pressaoArterial || 
+    form.value.glicemia === null || 
+    form.value.frequenciaCardiaca === null || 
+    form.value.peso === null ||
+    form.value.tomouMedicamentosHoje === null ||
+    !form.value.qualidadeSono
+  ) {
+    showToast('Por favor, preencha todos os campos obrigatórios (*).');
     return;
   }
 
   try {
     const token = localStorage.getItem('tokenBemViver');
-    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    
+    if (!token) {
+      showToast('Sessão inválida. Por favor, faça login novamente.');
+      return;
+    }
 
-    await axios.post('http://localhost:3000/api/meu-registro', form.value, config);
+    // 1. Extrair o userId de dentro do token JWT
+    const payloadBase64 = token.split('.')[1];
+    const tokenDados = JSON.parse(atob(payloadBase64));
+    const userId = tokenDados._id || tokenDados.id;
+
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+
+    // 2. Incluir o userId no objeto que vai para o backend
+    const payloadBackend = {
+      userId: userId, // <-- CORREÇÃO: Enviando o ID do utilizador
+      pressaoArterial: form.value.pressaoArterial,
+      glicemia: Number(form.value.glicemia),
+      frequenciaCardiaca: Number(form.value.frequenciaCardiaca),
+      peso: Number(form.value.peso),
+      possuiDiabetes: form.value.possuiDiabetes ?? false,
+      possuiHipertensao: form.value.possuiHipertensao ?? false,
+      tomouMedicamentosHoje: form.value.tomouMedicamentosHoje,
+      qualidadeSono: form.value.qualidadeSono
+    };
+
+    await axios.post('http://localhost:3000/api/registros', payloadBackend, config);
 
     const dataAtual = new Date().toISOString();
 
-    if (form.value.pressao) {
-      vitals.value.push({ type: 'blood_pressure', date: dataAtual, value: form.value.pressao, numericValue: 0, status: 'normal' } as VitalRecord);
-    }
-    if (form.value.glicemia) {
-      vitals.value.push({ type: 'glucose', date: dataAtual, value: form.value.glicemia + ' mg/dL', numericValue: Number(form.value.glicemia), status: 'normal' } as VitalRecord);
-    }
-    if (form.value.batimentos) {
-      vitals.value.push({ type: 'heart_rate', date: dataAtual, value: form.value.batimentos + ' BPM', numericValue: Number(form.value.batimentos), status: 'normal' } as VitalRecord);
-    }
-    if (form.value.peso) {
-      vitals.value.push({ type: 'weight', date: dataAtual, value: form.value.peso + ' kg', numericValue: Number(form.value.peso), status: 'normal' } as VitalRecord);
-    }
+    vitals.value.push({ type: 'blood_pressure', date: dataAtual, value: form.value.pressaoArterial, numericValue: 0, status: 'normal' } as VitalRecord);
+    vitals.value.push({ type: 'glucose', date: dataAtual, value: form.value.glicemia + ' mg/dL', numericValue: Number(form.value.glicemia), status: 'normal' } as VitalRecord);
+    vitals.value.push({ type: 'heart_rate', date: dataAtual, value: form.value.frequenciaCardiaca + ' BPM', numericValue: Number(form.value.frequenciaCardiaca), status: 'normal' } as VitalRecord);
+    vitals.value.push({ type: 'weight', date: dataAtual, value: form.value.peso + ' kg', numericValue: Number(form.value.peso), status: 'normal' } as VitalRecord);
 
     showToast('Tudo certo! Registro salvo com sucesso.');
 
     form.value = {
-      pressao: '', glicemia: '', batimentos: '', peso: '',
-      isDiabetico: null, tipoGlicemia: '', tomouInsulina: '',
-      isHipertenso: null, sintomasHipertensao: [],
-      adesaoMedica: '', justificativaAdesao: '', nivelDor: 0,
-      qualidadeSono: '', observacoes: ''
+      pressaoArterial: '',
+      glicemia: null,
+      frequenciaCardiaca: null,
+      peso: null,
+      possuiDiabetes: null,
+      possuiHipertensao: null,
+      tomouMedicamentosHoje: null,
+      qualidadeSono: '',
+      tipoGlicemia: '',
+      tomouInsulina: '',
+      sintomasHipertensao: [],
+      justificativaAdesao: '',
+      observacoes: ''
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao salvar no servidor:', error);
-    showToast('Erro ao salvar. Verifique se o servidor está rodando.');
+    // Para ajudar a debugar futuramente, exibe a mensagem exata que o backend retornou
+    const mensagemErro = error.response?.data?.message || 'Erro ao salvar o registro. Verifique a ligação ao servidor.';
+    showToast(mensagemErro);
   }
 };
 </script>
@@ -87,33 +118,33 @@ const submeterFormulario = async () => {
           <h3 class="section-title"><i class="fas fa-heartbeat"></i> 1. Minhas Medições</h3>
           <div class="form-grid">
             <div class="input-group">
-              <label for="pressao">Sua Pressão Arterial</label>
+              <label for="pressao">Sua Pressão Arterial *</label>
               <div class="input-with-icon">
-                <input type="text" id="pressao" v-model="form.pressao" placeholder="Ex: 12/8" />
+                <input type="text" id="pressao" v-model="form.pressaoArterial" placeholder="Ex: 12/8" required />
                 <span class="input-unit">mmHg</span>
               </div>
             </div>
 
             <div class="input-group">
-              <label for="glicemia">Sua Glicemia</label>
+              <label for="glicemia">Sua Glicemia *</label>
               <div class="input-with-icon">
-                <input type="number" id="glicemia" v-model="form.glicemia" placeholder="Ex: 95" />
+                <input type="number" id="glicemia" v-model="form.glicemia" placeholder="Ex: 95" required />
                 <span class="input-unit">mg/dL</span>
               </div>
             </div>
 
             <div class="input-group">
-              <label for="batimentos">Seus Batimentos Cardíacos</label>
+              <label for="batimentos">Seus Batimentos Cardíacos *</label>
               <div class="input-with-icon">
-                <input type="number" id="batimentos" v-model="form.batimentos" placeholder="Ex: 72" />
+                <input type="number" id="batimentos" v-model="form.frequenciaCardiaca" placeholder="Ex: 72" required />
                 <span class="input-unit">BPM</span>
               </div>
             </div>
 
             <div class="input-group">
-              <label for="peso">Seu Peso Atual</label>
+              <label for="peso">Seu Peso Atual *</label>
               <div class="input-with-icon">
-                <input type="number" step="0.1" id="peso" v-model="form.peso" placeholder="Ex: 74.2" />
+                <input type="number" step="0.1" id="peso" v-model="form.peso" placeholder="Ex: 74.2" required />
                 <span class="input-unit">kg</span>
               </div>
             </div>
@@ -128,7 +159,7 @@ const submeterFormulario = async () => {
           <div class="form-grid">
             <div class="input-group dropdown-group">
               <label>Você possui diagnóstico de Diabetes?</label>
-              <select v-model="form.isDiabetico" class="select-field">
+              <select v-model="form.possuiDiabetes" class="select-field">
                 <option :value="null" disabled selected>Selecione uma opção</option>
                 <option :value="true">Sim</option>
                 <option :value="false">Não</option>
@@ -137,7 +168,7 @@ const submeterFormulario = async () => {
 
             <div class="input-group dropdown-group">
               <label>Você possui diagnóstico de Hipertensão?</label>
-              <select v-model="form.isHipertenso" class="select-field">
+              <select v-model="form.possuiHipertensao" class="select-field">
                 <option :value="null" disabled selected>Selecione uma opção</option>
                 <option :value="true">Sim</option>
                 <option :value="false">Não</option>
@@ -145,7 +176,7 @@ const submeterFormulario = async () => {
             </div>
           </div>
 
-          <div v-if="form.isDiabetico === true" class="dynamic-sub-card diabetes-theme">
+          <div v-if="form.possuiDiabetes === true" class="dynamic-sub-card diabetes-theme">
             <h4><span class="badge-dot"></span> Detalhes sobre sua Glicemia</h4>
             <div class="form-grid mt-10">
               <div class="input-group">
@@ -168,7 +199,7 @@ const submeterFormulario = async () => {
             </div>
           </div>
 
-          <div v-if="form.isHipertenso === true" class="dynamic-sub-card hipertensao-theme">
+          <div v-if="form.possuiHipertensao === true" class="dynamic-sub-card hipertensao-theme">
             <h4><span class="badge-dot alert"></span> Como você está se sentindo?</h4>
             <label class="checkbox-section-label">Marque se você sentiu algum destes sintomas nas últimas horas:</label>
             <div class="checkbox-grid">
@@ -187,27 +218,27 @@ const submeterFormulario = async () => {
           
           <div class="form-grid">
             <div class="input-group">
-              <label>Você tomou seus medicamentos hoje?</label>
-              <select v-model="form.adesaoMedica">
-                <option value="" disabled>Selecione a situação</option>
-                <option value="total">Sim, tomei todos corretamente</option>
-                <option value="parcial">Tomei apenas alguns</option>
-                <option value="nenhuma">Não tomei nenhum medicamento</option>
+              <label>Você tomou seus medicamentos hoje? *</label>
+              <select v-model="form.tomouMedicamentosHoje" required>
+                <option :value="null" disabled>Selecione a situação</option>
+                <option :value="true">Sim, tomei todos corretamente</option>
+                <option :value="false">Não tomei / Tomei apenas alguns</option>
               </select>
             </div>
 
             <div class="input-group">
-              <label>Como foi a qualidade do seu sono esta noite?</label>
-              <select v-model="form.qualidadeSono">
+              <label>Como foi a qualidade do seu sono esta noite? *</label>
+              <select v-model="form.qualidadeSono" required>
                 <option value="" disabled>Selecione a avaliação</option>
                 <option value="excelente">Dormi muito bem / Sono reparador</option>
+                <option value="boa">Boa</option>
                 <option value="regular">Acordei algumas vezes / Sono regular</option>
-                <option value="insonia">Tive insônia / Dormi muito mal</option>
+                <option value="ruim">Tive insônia / Dormi muito mal</option>
               </select>
             </div>
           </div>
 
-          <div v-if="form.adesaoMedica === 'parcial' || form.adesaoMedica === 'nenhuma'" class="input-group full-width mt-15 animate-input">
+          <div v-if="form.tomouMedicamentosHoje === false" class="input-group full-width mt-15 animate-input">
             <label for="justificativa" class="alert-label-text">Conte-nos o motivo de não ter tomado os medicamentos:</label>
             <input type="text" id="justificativa" v-model="form.justificativaAdesao" placeholder="Ex: Esqueci, o remédio acabou, tive efeitos colaterais..." />
           </div>
