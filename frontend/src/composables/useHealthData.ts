@@ -42,7 +42,6 @@ export interface UserProfile {
   caregiverRelation?: string;
 }
 
-
 const isLoggedIn = ref(false);
 const currentTab = ref<'dashboard' | 'registar' | 'graficos' | 'historico'>('dashboard');
 const toastMessage = ref<string | null>(null);
@@ -53,19 +52,16 @@ const vitals = ref<VitalRecord[]>([]);
 const medications = ref<Medication[]>([]);
 const appointments = ref<Appointment[]>([]);
 
-
 const isLoading = ref(true);
 
 export function useHealthData() {
   
-
   const showToast = (message: string) => {
     toastMessage.value = message;
     setTimeout(() => {
       toastMessage.value = null;
     }, 4000);
   };
-
 
   const triggerCallSimulation = (name: string, phone: string, type: 'caregiver' | 'doctor' | 'emerg') => {
     callScenario.value = { isOpen: true, name, phone, type };
@@ -75,6 +71,57 @@ export function useHealthData() {
   const endCall = () => {
     callScenario.value = null;
     showToast('Chamada finalizada.');
+  };
+
+  // Função auxiliar para extrair o ID do utilizador de dentro do Token JWT
+  const obterIdDoToken = (token: string): string | null => {
+    try {
+      // O JWT é composto por 3 partes separadas por ponto. O payload é a segunda.
+      const payloadBase64 = token.split('.')[1];
+      const payloadDecodificado = atob(payloadBase64);
+      const dados = JSON.parse(payloadDecodificado);
+      
+      // Retorna o _id ou id (depende de como configurou no login do backend)
+      return dados._id || dados.id || null;
+    } catch (erro) {
+      console.error('Erro ao decodificar o token:', erro);
+      return null;
+    }
+  };
+
+  // Alterado para receber o userId e consultar a rota correta
+  const carregarRegistros = async (token: string, userId: string) => {
+    try {
+      const config = {
+        headers: { 'Authorization': `Bearer ${token}` }
+      };
+
+      // Usa a rota: /api/registros/user/:userId
+      const respostaRegistros = await axios.get(`http://localhost:3000/api/registros/user/${userId}`, config);
+      
+      const mapeados: VitalRecord[] = [];
+
+      respostaRegistros.data.forEach((registro: any) => {
+        if (registro.pressaoArterial) {
+          mapeados.push({ type: 'blood_pressure', date: registro.createdAt, value: registro.pressaoArterial, numericValue: 0, status: 'normal' });
+        }
+        if (registro.glicemia) {
+          mapeados.push({ type: 'glucose', date: registro.createdAt, value: String(registro.glicemia), numericValue: registro.glicemia, status: 'normal' });
+        }
+        if (registro.frequenciaCardiaca) {
+          mapeados.push({ type: 'heart_rate', date: registro.createdAt, value: String(registro.frequenciaCardiaca), numericValue: registro.frequenciaCardiaca, status: 'normal' });
+        }
+        if (registro.peso) {
+          mapeados.push({ type: 'weight', date: registro.createdAt, value: String(registro.peso), numericValue: registro.peso, status: 'normal' });
+        }
+      });
+
+      vitals.value = mapeados.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    } catch (error) {
+      console.error('Erro ao carregar registros médicos:', error);
+      showToast('Não foi possível carregar os registros médicos.');
+    }
   };
 
   const carregarDadosDoUsuario = async () => {
@@ -87,16 +134,29 @@ export function useHealthData() {
         return;
       }
 
+      const userId = obterIdDoToken(token);
+
+      if (!userId) {
+        throw new Error('ID do utilizador não encontrado no token.');
+      }
+
       const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       };
 
-      const respostaUsuario = await axios.get('http://localhost:3000/api/users/me', config);
+      // 1. Busca os dados do usuário específico
+      const respostaUsuario = await axios.get(`http://localhost:3000/api/users/${userId}`, config);
+      console.log('Resposta do usuário:', respostaUsuario.data);
       
-      profile.value = respostaUsuario.data;
+      // Mapeia os dados do schema (nome) para o frontend (name)
+      profile.value = {
+        _id: respostaUsuario.data._id,
+        name: respostaUsuario.data.nome, 
+        email: respostaUsuario.data.email
+      };
 
+      // 2. Busca os registros do utilizador específico
+      await carregarRegistros(token, userId);
 
     } catch (error) {
       console.error('Erro ao conectar com o servidor:', error);
