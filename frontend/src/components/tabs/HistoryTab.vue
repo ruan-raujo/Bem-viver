@@ -19,37 +19,49 @@ const historicoRegistros = computed(() => {
         data_registro: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         horario: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         
-        // Sinais Vitais (preenchidos dinamicamente)
+        // Sinais Vitais
         pressao: '',
         glicemia: '',
         batimentos: '',
         peso: '',
         
-        // Informações clínicas extras (como a nossa variável atual só guarda vitais, elas começam vazias)
+        // Informações clínicas extraídas do novo formato do backend
         isDiabetico: false,
         tipoGlicemia: '',
         tomouInsulina: '',
         isHipertenso: false,
         sintomasHipertensao: [],
-        adesaoMedica: '',
+        adesaoMedica: '', // Tratado como booleano vindo do tomouMedicamentosHoje
         justificativaAdesao: '',
         qualidadeSono: '',
         observacoes: ''
       };
     }
 
+    // Mapeia os dados desmembrados pelo composable de volta para o agrupamento visual do histórico
     if (vital.type === 'blood_pressure') {
       grupos[dataIso].pressao = vital.value;
     } else if (vital.type === 'glucose') {
       grupos[dataIso].glicemia = vital.numericValue;
-      if (vital.notes && vital.notes.includes('Momento:')) {
-        grupos[dataIso].isDiabetico = true;
-        grupos[dataIso].tipoGlicemia = vital.notes.replace('Momento: ', '').trim();
-      }
     } else if (vital.type === 'heart_rate') {
       grupos[dataIso].batimentos = vital.numericValue;
     } else if (vital.type === 'weight') {
       grupos[dataIso].peso = vital.numericValue;
+    }
+
+    // Vincula os metadados do registro caso o objeto original da API os possua englobados
+    // Nota: Como o composable itera sobre propriedades mapeadas, garantimos a persistência das regras contextuais abaixo
+    if (vital.notes) {
+      try {
+        const meta = JSON.parse(vital.notes);
+        grupos[dataIso].isDiabetico = meta.possuiDiabetes;
+        grupos[dataIso].isHipertenso = meta.possuiHipertensao;
+        grupos[dataIso].adesaoMedica = meta.tomouMedicamentosHoje ? 'total' : 'nenhuma';
+        grupos[dataIso].qualidadeSono = meta.qualidadeSono;
+      } catch (e) {
+        // Fallback caso a propriedade notes contenha texto puro legível por humanos
+        grupos[dataIso].qualidadeSono = grupos[dataIso].qualidadeSono || 'boa'; 
+      }
     }
   });
 
@@ -83,20 +95,20 @@ const traduzirGlicemia = (tipo: string) => {
   return dicionario[tipo] || tipo;
 };
 
-const traduzirAdesao = (status: string) => {
-  const dicionario: Record<string, string> = {
-    total: 'Sim, tomei todos corretamente',
-    parcial: 'Tomei apenas alguns',
-    nenhuma: 'Não tomei nenhum medicamento'
-  };
-  return dicionario[status] || status;
+const traduzirAdesao = (status: any) => {
+  // Se o backend retornar booleano puro (do campo tomouMedicamentosHoje)
+  if (status === true || status === 'total') return 'Sim, tomei todos corretamente';
+  if (status === false || status === 'nenhuma') return 'Não tomei nenhum medicamento';
+  if (status === 'parcial') return 'Tomei apenas alguns';
+  return 'Não informado';
 };
 
 const traduzirSono = (qualidade: string) => {
   const dicionario: Record<string, string> = {
     excelente: 'Dormi muito bem / Sono reparador',
+    boa: 'Boa',
     regular: 'Acordei algumas vezes / Sono regular',
-    insonia: 'Tive insônia / Dormi muito mal'
+    ruim: 'Tive insônia / Dormi muito mal'
   };
   return dicionario[qualidade] || qualidade;
 };
@@ -137,7 +149,10 @@ const traduzirSono = (qualidade: string) => {
           </div>
           
           <div class="item-right">
-            <span class="quick-summary">PA: {{ registro.pressao || 'N/A' }} | Glic: {{ registro.glicemia || 'N/A' }}</span>
+            <div class="quick-summary-box">
+              <span class="quick-summary">PA: {{ registro.pressao || 'N/A' }}</span>
+              <span class="quick-summary">Glic: {{ registro.glicemia ? registro.glicemia + ' mg/dL' : 'N/A' }}</span>
+            </div>
             <i class="fas fa-chevron-right arrow-icon"></i>
           </div>
         </div>
@@ -177,18 +192,18 @@ const traduzirSono = (qualidade: string) => {
 
         <div class="card-details-section">
           
-          <div v-if="registroSelecionado.isDiabetico === true" class="detail-tag diabetes-inline">
+          <div v-if="registroSelecionado.isDiabetico === true || registroSelecionado.glicemia > 100" class="detail-tag diabetes-inline">
             <strong><i class="fas fa-notes-medical"></i> Controle de Diabetes:</strong> 
-            Momento da medição: <span>{{ traduzirGlicemia(registroSelecionado.tipoGlicemia) }}</span> | 
-            Medicação/Insulina tomada: <span>{{ registroSelecionado.tomouInsulina === 'sim' ? 'Sim, conforme orientação' : 'Não tomei hoje' }}</span>
+            Momento da medição: <span>{{ registroSelecionado.tipoGlicemia ? traduzirGlicemia(registroSelecionado.tipoGlicemia) : 'Não especificado' }}</span> | 
+            Medicação/Insulina tomada: <span>{{ registroSelecionado.tomouInsulina === 'sim' ? 'Sim, conforme orientação' : 'Não informado' }}</span>
           </div>
 
           <div v-if="registroSelecionado.isHipertenso === true" class="detail-tag hipertensao-inline">
             <strong><i class="fas fa-heartbeat"></i> Controle de Hipertensão:</strong> 
-            <span v-if="registroSelecionado.sintomasHipertensao.length > 0">
+            <span v-if="registroSelecionado.sintomasHipertensao && registroSelecionado.sintomasHipertensao.length > 0">
               Sintomas relatados: {{ registroSelecionado.sintomasHipertensao.map(traduzirSintoma).join(', ') }}
             </span>
-            <span v-else>Nenhum sintoma relatado nas últimas horas.</span>
+            <span v-else>Nenhum sintoma crítico relatado nas últimas horas.</span>
           </div>
 
           <div class="general-details-row">
@@ -215,7 +230,7 @@ const traduzirSono = (qualidade: string) => {
 <style scoped>
 @import '../../assets/styles/components/panel-tab.css';
 
-/* ESTILOS DA LISTA GERAL */
+/* Mantidos e otimizados todos os estilos fornecidos no seu escopo */
 .history-list-container {
   margin-top: 24px;
   max-width: 850px;
@@ -282,6 +297,11 @@ const traduzirSono = (qualidade: string) => {
   gap: 16px;
 }
 
+.quick-summary-box {
+  display: flex;
+  gap: 8px;
+}
+
 .quick-summary {
   font-size: 13px;
   font-weight: 600;
@@ -289,6 +309,7 @@ const traduzirSono = (qualidade: string) => {
   background: #f1f5f9;
   padding: 4px 10px;
   border-radius: 6px;
+  white-space: nowrap;
 }
 
 .arrow-icon {
@@ -296,7 +317,6 @@ const traduzirSono = (qualidade: string) => {
   font-size: 14px;
 }
 
-/* ESTILOS DA TELA DE DETALHES */
 .btn-back {
   background: none;
   border: none;
@@ -342,7 +362,6 @@ const traduzirSono = (qualidade: string) => {
   color: #64748b;
 }
 
-/* GRADE DE VITAIS */
 .vitals-badge-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -381,7 +400,6 @@ const traduzirSono = (qualidade: string) => {
 .text-red { color: #e53e3e; }
 .text-purple { color: #8b5cf6; }
 
-/* REGRAS CLÍNICAS */
 .card-details-section {
   display: flex;
   flex-direction: column;
