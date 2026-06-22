@@ -4,7 +4,7 @@
 
       <div class="brand">
         <img src="@/assets/images/logo.png" alt="Logo Bem-viver" class="logo" />
-        <span class="brand-name">Bem-viver</span>
+        <span class="brand-name" data-test="hero-heading">Bem-viver</span>
         <p>{{ isLogin ? 'Cuidado digital para o seu bem-estar.' : 'Preencha os dados para se cadastrar' }}</p>
       </div>
 
