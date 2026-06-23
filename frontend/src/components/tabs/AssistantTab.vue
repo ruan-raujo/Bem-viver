@@ -110,7 +110,8 @@ const submeterFormulario = () => {
                 </select>
               </div>
             </div>
-          </Transition>
+
+          </div>
 
           <Transition name="slide-fade">
             <div v-if="form.possuiDiabetes === true" class="dynamic-sub-card diabetes-theme">
