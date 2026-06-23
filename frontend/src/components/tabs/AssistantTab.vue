@@ -1,98 +1,31 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import axios from 'axios';
-import { useHealthData, type VitalRecord } from '../../composables/useHealthData';
+import { reactive } from 'vue';
 
-const { showToast, vitals } = useHealthData();
-
-const form = ref({
+const form = reactive({
   pressaoArterial: '',
   glicemia: null as number | null,
   frequenciaCardiaca: null as number | null,
   peso: null as number | null,
   possuiDiabetes: null as boolean | null,
   possuiHipertensao: null as boolean | null,
-  tomouMedicamentosHoje: null as boolean | null,
-  qualidadeSono: '',
-  
   tipoGlicemia: '',
   tomouInsulina: '',
   sintomasHipertensao: [] as string[],
+  tomouMedicamentosHoje: null as boolean | null,
+  qualidadeSono: '',
   justificativaAdesao: '',
   observacoes: ''
 });
 
-const submeterFormulario = async () => {
-  if (
-    !form.value.pressaoArterial || 
-    form.value.glicemia === null || 
-    form.value.frequenciaCardiaca === null || 
-    form.value.peso === null ||
-    form.value.tomouMedicamentosHoje === null ||
-    !form.value.qualidadeSono
-  ) {
-    showToast('Por favor, preencha todos os campos obrigatórios (*).');
-    return;
-  }
+const submeterFormulario = () => {
+  const payload = {
+    ...form,
+    glicemia: form.glicemia === null ? undefined : form.glicemia,
+    frequenciaCardiaca: form.frequenciaCardiaca === null ? undefined : form.frequenciaCardiaca,
+    peso: form.peso === null ? undefined : form.peso
+  };
 
-  try {
-    const token = localStorage.getItem('tokenBemViver');
-    
-    if (!token) {
-      showToast('Sessão inválida. Por favor, faça login novamente.');
-      return;
-    }
-
-    const payloadBase64 = token.split('.')[1];
-    const tokenDados = JSON.parse(atob(payloadBase64));
-    const userId = tokenDados._id || tokenDados.id;
-
-    const config = { headers: { Authorization: `Bearer ${token}` } };
-
-    const payloadBackend = {
-      userId: userId,
-      pressaoArterial: form.value.pressaoArterial,
-      glicemia: Number(form.value.glicemia),
-      frequenciaCardiaca: Number(form.value.frequenciaCardiaca),
-      peso: Number(form.value.peso),
-      possuiDiabetes: form.value.possuiDiabetes ?? false,
-      possuiHipertensao: form.value.possuiHipertensao ?? false,
-      tomouMedicamentosHoje: form.value.tomouMedicamentosHoje,
-      qualidadeSono: form.value.qualidadeSono
-    };
-
-    await axios.post('http://localhost:3000/api/registros', payloadBackend, config);
-
-    const dataAtual = new Date().toISOString();
-
-    vitals.value.push({ type: 'blood_pressure', date: dataAtual, value: form.value.pressaoArterial, numericValue: 0, status: 'normal' } as VitalRecord);
-    vitals.value.push({ type: 'glucose', date: dataAtual, value: form.value.glicemia + ' mg/dL', numericValue: Number(form.value.glicemia), status: 'normal' } as VitalRecord);
-    vitals.value.push({ type: 'heart_rate', date: dataAtual, value: form.value.frequenciaCardiaca + ' BPM', numericValue: Number(form.value.frequenciaCardiaca), status: 'normal' } as VitalRecord);
-    vitals.value.push({ type: 'weight', date: dataAtual, value: form.value.peso + ' kg', numericValue: Number(form.value.peso), status: 'normal' } as VitalRecord);
-
-    showToast('Tudo certo! Registro salvo com sucesso.');
-
-    form.value = {
-      pressaoArterial: '',
-      glicemia: null,
-      frequenciaCardiaca: null,
-      peso: null,
-      possuiDiabetes: null,
-      possuiHipertensao: null,
-      tomouMedicamentosHoje: null,
-      qualidadeSono: '',
-      tipoGlicemia: '',
-      tomouInsulina: '',
-      sintomasHipertensao: [],
-      justificativaAdesao: '',
-      observacoes: ''
-    };
-
-  } catch (error: any) {
-    console.error('Erro ao salvar no servidor:', error);
-    const mensagemErro = error.response?.data?.message || 'Erro ao salvar o registro. Verifique a ligação ao servidor.';
-    showToast(mensagemErro);
-  }
+  console.log('Registro de saúde enviado:', payload);
 };
 </script>
 
@@ -102,7 +35,7 @@ const submeterFormulario = async () => {
     <div class="greeting-section">
       <div class="greeting-header">
         <h2 class="greeting-text-title">Como você está hoje?</h2>
-        <p class="greeting-text-subtitle">Registre suas medições e rotinas diárias para manter seu histórico clínico impecável.</p>
+        <p class="greeting-text-subtitle">Registre suas medições e como está se sentindo para manter seu histórico atualizado.</p>
       </div>
     </div>
 
@@ -110,24 +43,21 @@ const submeterFormulario = async () => {
       <form @submit.prevent="submeterFormulario" class="clinical-form">
         
         <div class="form-section">
-          <div class="section-header">
-            <div class="icon-wrapper blue-icon">
-              <i class="fas fa-heartbeat"></i>
-            </div>
-            <h3 class="section-title">1. Minhas Medições</h3>
-          </div>
-          
+          <h3 class="section-title">
+            <span class="icon-wrapper blue"><i class="fas fa-heartbeat"></i></span> 
+            Minhas Medições
+          </h3>
           <div class="form-grid">
             <div class="input-group">
-              <label for="pressao">Sua Pressão Arterial <span class="required-dot">*</span></label>
+              <label for="pressao">Pressão Arterial <span class="required">*</span></label>
               <div class="input-with-icon">
-                <input type="text" id="pressao" v-model="form.pressaoArterial" placeholder="Ex: 12/8" required />
+                <input type="text" id="pressao" v-model="form.pressaoArterial" placeholder="Ex: 120/80" required />
                 <span class="input-unit">mmHg</span>
               </div>
             </div>
 
             <div class="input-group">
-              <label for="glicemia">Sua Glicemia <span class="required-dot">*</span></label>
+              <label for="glicemia">Glicemia <span class="required">*</span></label>
               <div class="input-with-icon">
                 <input type="number" id="glicemia" v-model="form.glicemia" placeholder="Ex: 95" required />
                 <span class="input-unit">mg/dL</span>
@@ -135,7 +65,7 @@ const submeterFormulario = async () => {
             </div>
 
             <div class="input-group">
-              <label for="batimentos">Seus Batimentos Cardíacos <span class="required-dot">*</span></label>
+              <label for="batimentos">Frequência Cardíaca <span class="required">*</span></label>
               <div class="input-with-icon">
                 <input type="number" id="batimentos" v-model="form.frequenciaCardiaca" placeholder="Ex: 72" required />
                 <span class="input-unit">BPM</span>
@@ -143,7 +73,7 @@ const submeterFormulario = async () => {
             </div>
 
             <div class="input-group">
-              <label for="peso">Seu Peso Atual <span class="required-dot">*</span></label>
+              <label for="peso">Peso Atual <span class="required">*</span></label>
               <div class="input-with-icon">
                 <input type="number" step="0.1" id="peso" v-model="form.peso" placeholder="Ex: 74.2" required />
                 <span class="input-unit">kg</span>
@@ -153,96 +83,80 @@ const submeterFormulario = async () => {
         </div>
 
         <div class="form-section">
-          <div class="section-header">
-            <div class="icon-wrapper teal-icon">
-              <i class="fas fa-notes-medical"></i>
-            </div>
-            <h3 class="section-title">2. Meu Histórico de Saúde</h3>
-          </div>
+          <h3 class="section-title">
+            <span class="icon-wrapper teal"><i class="fas fa-notes-medical"></i></span> 
+            Meu Histórico de Saúde
+          </h3>
           
           <div class="form-grid">
             <div class="input-group dropdown-group">
-              <label>Você possui diagnóstico de Diabetes?</label>
+              <label>Possui diagnóstico de Diabetes?</label>
               <div class="select-wrapper">
                 <select v-model="form.possuiDiabetes" class="select-field">
                   <option :value="null" disabled selected>Selecione uma opção</option>
-                  <option :value="true">Sim, possuo</option>
-                  <option :value="false">Não possuo</option>
+                  <option :value="true">Sim</option>
+                  <option :value="false">Não</option>
                 </select>
               </div>
             </div>
 
             <div class="input-group dropdown-group">
-              <label>Você possui diagnóstico de Hipertensão?</label>
+              <label>Possui diagnóstico de Hipertensão?</label>
               <div class="select-wrapper">
                 <select v-model="form.possuiHipertensao" class="select-field">
                   <option :value="null" disabled selected>Selecione uma opção</option>
-                  <option :value="true">Sim, possuo</option>
-                  <option :value="false">Não possuo</option>
+                  <option :value="true">Sim</option>
+                  <option :value="false">Não</option>
                 </select>
               </div>
             </div>
-          </div>
+          </Transition>
 
-          <Transition name="fade-slide">
+          <Transition name="slide-fade">
             <div v-if="form.possuiDiabetes === true" class="dynamic-sub-card diabetes-theme">
-              <div class="card-inner-header">
-                <span class="badge-dot"></span>
-                <h4>Detalhes sobre sua Glicemia</h4>
-              </div>
+              <h4><span class="badge-dot green"></span> Detalhes da Glicemia</h4>
               <div class="form-grid mt-10">
                 <div class="input-group">
-                  <label>Em qual momento você mediu?</label>
-                  <div class="select-wrapper">
-                    <select v-model="form.tipoGlicemia">
-                      <option value="" disabled>Selecione o momento</option>
-                      <option value="jejum">Estava em Jejum</option>
-                      <option value="pre_prandial">Antes de uma refeição</option>
-                      <option value="pos_prandial">Após uma refeição (2h depois)</option>
-                    </select>
-                  </div>
+                  <label>Momento da medição</label>
+                  <select v-model="form.tipoGlicemia">
+                    <option value="" disabled>Selecione o momento</option>
+                    <option value="jejum">Em Jejum</option>
+                    <option value="pre_prandial">Antes da refeição</option>
+                    <option value="pos_prandial">Após a refeição (2h)</option>
+                  </select>
                 </div>
                 <div class="input-group">
-                  <label>Tomou sua insulina ou medicação hoje?</label>
-                  <div class="select-wrapper">
-                    <select v-model="form.tomouInsulina">
-                      <option value="" disabled>Selecione</option>
-                      <option value="sim">Sim, conforme orientação</option>
-                      <option value="nao">Não tomei hoje</option>
-                    </select>
-                  </div>
+                  <label>Tomou insulina/medicação hoje?</label>
+                  <select v-model="form.tomouInsulina">
+                    <option value="" disabled>Selecione</option>
+                    <option value="sim">Sim, conforme orientação</option>
+                    <option value="nao">Não tomei hoje</option>
+                  </select>
                 </div>
               </div>
             </div>
           </Transition>
 
-          <Transition name="fade-slide">
+          <Transition name="slide-fade">
             <div v-if="form.possuiHipertensao === true" class="dynamic-sub-card hipertensao-theme">
-              <div class="card-inner-header">
-                <span class="badge-dot alert"></span>
-                <h4>Como você está se sentindo?</h4>
-              </div>
-              <label class="checkbox-section-label">Marque se você sentiu algum destes sintomas nas últimas horas:</label>
+              <h4><span class="badge-dot red"></span> Monitoramento de Sintomas</h4>
+              <label class="checkbox-section-label">Sentiu algum destes sintomas nas últimas horas?</label>
               <div class="checkbox-grid">
                 <label class="checkbox-item">
-                  <input type="checkbox" value="cefaleia" v-model="form.sintomasHipertensao" />
-                  <span class="custom-checkbox"></span>
-                  Dor de cabeça forte
+                  <input type="checkbox" value="cefaleia" v-model="form.sintomasHipertensao" /> 
+                  <span class="checkbox-text">Dor de cabeça forte</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" value="tontura" v-model="form.sintomasHipertensao" />
-                  <span class="custom-checkbox"></span>
-                  Tontura ou fraqueza
+                  <input type="checkbox" value="tontura" v-model="form.sintomasHipertensao" /> 
+                  <span class="checkbox-text">Tontura ou fraqueza</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" value="visao_turva" v-model="form.sintomasHipertensao" />
-                  <span class="custom-checkbox"></span>
-                  Visão embaçada ou turva
+                  <input type="checkbox" value="visao_turva" v-model="form.sintomasHipertensao" /> 
+                  <span class="checkbox-text">Visão embaçada</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" value="dor_peito" v-model="form.sintomasHipertensao" />
-                  <span class="custom-checkbox"></span>
-                  Aperto ou dor no peito
+                  <input type="checkbox" value="dor_peito" v-model="form.sintomasHipertensao" /> 
+                  <span class="checkbox-text">Aperto ou dor no peito</span>
                 </label>
               </div>
             </div>
@@ -250,67 +164,84 @@ const submeterFormulario = async () => {
         </div>
 
         <div class="form-section">
-          <div class="section-header">
-            <div class="icon-wrapper purple-icon">
-              <i class="fas fa-pills"></i>
-            </div>
-            <h3 class="section-title">3. Minha Rotina e Bem-Estar</h3>
-          </div>
+          <h3 class="section-title">
+            <span class="icon-wrapper purple"><i class="fas fa-pills"></i></span> 
+            Rotina e Bem-Estar
+          </h3>
           
           <div class="form-grid">
             <div class="input-group">
-              <label>Você tomou seus medicamentos hoje? <span class="required-dot">*</span></label>
-              <div class="select-wrapper">
-                <select v-model="form.tomouMedicamentosHoje" required>
-                  <option :value="null" disabled>Selecione a situação</option>
-                  <option :value="true">Sim, tomei todos corretamente</option>
-                  <option :value="false">Não tomei / Tomei apenas alguns</option>
-                </select>
-              </div>
+              <label>Tomou seus medicamentos hoje? <span class="required">*</span></label>
+              <select v-model="form.tomouMedicamentosHoje" required>
+                <option :value="null" disabled>Selecione a situação</option>
+                <option :value="true">Sim, tomei todos corretamente</option>
+                <option :value="false">Não tomei / Tomei apenas alguns</option>
+              </select>
             </div>
 
             <div class="input-group">
-              <label>Como foi a qualidade do seu sono esta noite? <span class="required-dot">*</span></label>
-              <div class="select-wrapper">
-                <select v-model="form.qualidadeSono" required>
-                  <option value="" disabled>Selecione a avaliação</option>
-                  <option value="excelente">Dormi muito bem / Sono reparador</option>
-                  <option value="boa">Boa</option>
-                  <option value="regular">Acordei algumas vezes / Sono regular</option>
-                  <option value="ruim">Tive insônia / Dormi muito mal</option>
-                </select>
-              </div>
+              <label>Qualidade do sono esta noite <span class="required">*</span></label>
+              <select v-model="form.qualidadeSono" required>
+                <option value="" disabled>Selecione a avaliação</option>
+                <option value="excelente">Excelente / Reparador</option>
+                <option value="boa">Boa</option>
+                <option value="regular">Regular / Acordei algumas vezes</option>
+                <option value="ruim">Ruim / Insônia</option>
+              </select>
             </div>
           </div>
 
-          <Transition name="fade-slide">
-            <div v-if="form.tomouMedicamentosHoje === false" class="input-group full-width mt-15">
-              <label for="justificativa" class="alert-label-text">Conte-nos o motivo de não ter tomado os medicamentos:</label>
-              <input type="text" id="justificativa" v-model="form.justificativaAdesao" placeholder="Ex: Esqueci, remédio acabou, efeitos colaterais..." />
+          <Transition name="slide-fade">
+            <div v-if="form.tomouMedicamentosHoje === false" class="input-group full-width mt-15 alert-input-group">
+              <label for="justificativa" class="alert-label-text">Motivo de não ter tomado os medicamentos:</label>
+              <input type="text" id="justificativa" v-model="form.justificativaAdesao" placeholder="Ex: Esqueci, o remédio acabou, efeitos colaterais..." />
             </div>
           </Transition>
         </div>
 
-        <div class="input-group full-width mt-10">
-          <label for="observacoes">Quer relatar mais alguma coisa sobre como se sente?</label>
-          <textarea id="observacoes" v-model="form.observacoes" placeholder="Escreva aqui se tiver outros sintomas, queixas ou comentários sobre o seu dia..." rows="4"></textarea>
+        <hr class="form-divider" />
+
+        <div class="input-group full-width">
+          <label for="observacoes">Observações adicionais (Opcional)</label>
+          <textarea id="observacoes" v-model="form.observacoes" placeholder="Relate aqui outros sintomas, queixas ou comentários sobre o seu dia..." rows="3"></textarea>
         </div>
 
         <div class="form-actions">
           <button type="submit" class="btn-submit-health">
-            <img src="@/assets/images/prancheta.png" alt="icon" width="18" class="btn-icon-white" />
+            <img src="@/assets/images/prancheta.png" alt="icon" width="20" class="btn-icon-white" />
             <span>Salvar Registro Clínico</span>
           </button>
         </div>
 
       </form>
     </div>
-
   </div>
 </template>
 
 <style scoped>
-@import '../../assets/styles/components/panel-tab.css';
+/* @import '../../assets/styles/components/panel-tab.css'; Manter se necessário */
+
+.panel-content {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color: #0f172a;
+}
+
+.greeting-section {
+  margin-bottom: 24px;
+}
+
+.greeting-text-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.greeting-text-subtitle {
+  color: #64748b;
+  font-size: 15px;
+}
 
 /* CONTAINER PRINCIPAL E ESTRUTURA GLOBAL */
 .panel-content {
@@ -340,10 +271,11 @@ const submeterFormulario = async () => {
 /* CARTÃO PRINCIPAL */
 .form-card-container {
   background: #ffffff;
-  border-radius: 24px;
-  padding: 20px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+  border-radius: 20px;
+  padding: 36px 40px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
   border: 1px solid #f1f5f9;
+  margin-top: 24px;
   max-width: 850px;
   margin: 0 auto;
 }
@@ -351,7 +283,7 @@ const submeterFormulario = async () => {
 .clinical-form {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 28px;
 }
 
 .form-section {
@@ -360,41 +292,34 @@ const submeterFormulario = async () => {
   gap: 20px;
 }
 
-/* CABEÇALHOS DAS SECÇÕES */
-.section-header {
+.section-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f8fafc;
+  margin-bottom: 4px;
 }
 
 .icon-wrapper {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
-.blue-icon { background: #eff6ff; color: #2563eb; }
-.teal-icon { background: #f0fdfa; color: #0d9488; }
-.purple-icon { background: #faf5ff; color: #7c3aed; }
+.icon-wrapper.blue { background: #e0f2fe; color: #0284c7; }
+.icon-wrapper.teal { background: #ccfbf1; color: #0f766e; }
+.icon-wrapper.purple { background: #f3e8ff; color: #7e22ce; }
 
-.section-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-}
-
-/* GRIDS RESPONSIVOS DE VERDADE */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
 }
 
 .input-group {
@@ -409,7 +334,7 @@ const submeterFormulario = async () => {
 
 label {
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 500;
   color: #475569;
   display: flex;
   align-items: center;
@@ -420,124 +345,107 @@ label {
   margin-left: 3px;
 }
 
-/* CAMPOS DE INPUT E COMPONENTES */
+.required {
+  color: #e11d48;
+  margin-left: 2px;
+}
+
 .input-with-icon {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-input, textarea, select {
+input[type="text"], 
+input[type="number"], 
+textarea, 
+select {
   width: 100%;
-  padding: 13px 16px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  font-size: 15px;
-  color: #334155;
-  background-color: #ffffff;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14.5px;
+  color: #1e293b;
+  background-color: #f8fafc;
   outline: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
-  -webkit-appearance: none; /* Remove estilos do iOS */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
 }
 
+/* Estado de Foco Elegante */
 input:focus, textarea:focus, select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  border-color: #0ea5e9;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+}
+
+input::placeholder, textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
 }
 
 .input-unit {
   position: absolute;
   right: 16px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: #94a3b8;
   pointer-events: none;
+  background-color: transparent;
 }
 
-input {
-  padding-right: 75px;
+.input-with-icon input {
+  padding-right: 80px;
 }
 
-/* TRATAMENTO PREMIUM DE SELECTS (DROPDOWNS) */
-.select-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.select-wrapper::after {
-  content: '\f078';
-  font-family: 'Font Awesome 5 Free';
-  font-weight: 900;
-  font-size: 12px;
-  color: #64748b;
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-
-select {
-  padding-right: 40px;
-  cursor: pointer;
-}
-
-textarea {
-  resize: vertical;
-  line-height: 1.5;
-}
-
-/* CARDS CLÍNICOS DINÂMICOS */
+/* Cards Dinâmicos (Subseções) */
 .dynamic-sub-card {
-  grid-column: 1 / -1;
-  padding: 20px;
-  border-radius: 16px;
-  border: 1px solid transparent;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01);
-}
-
-.card-inner-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.card-inner-header h4 {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
+  grid-column: span 2;
+  padding: 24px;
+  border-radius: 14px;
+  border-left: 4px solid;
+  margin-top: 8px;
 }
 
 .diabetes-theme {
-  background-color: #f0fdf4;
-  border-color: #bbf7d0;
-}
-
-.diabetes-theme .badge-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #22c55e;
-  border-radius: 50%;
+  background-color: #f0fdf4; /* Emerald 50 */
+  border-color: #10b981;     /* Emerald 500 */
+  border-top: 1px solid #dcfce7;
+  border-right: 1px solid #dcfce7;
+  border-bottom: 1px solid #dcfce7;
 }
 
 .hipertensao-theme {
-  background-color: #fef2f2;
-  border-color: #fecaca;
+  background-color: #fff1f2; /* Rose 50 */
+  border-color: #e11d48;     /* Rose 600 */
+  border-top: 1px solid #ffe4e6;
+  border-right: 1px solid #ffe4e6;
+  border-bottom: 1px solid #ffe4e6;
 }
 
-.hipertensao-theme .badge-dot.alert {
-  width: 8px;
-  height: 8px;
-  background-color: #ef4444;
+.dynamic-sub-card h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
 }
 
+.badge-dot.green { background-color: #10b981; }
+.badge-dot.red { background-color: #e11d48; }
+
 .checkbox-section-label {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 13.5px;
+  color: #475569;
   margin-bottom: 12px;
   display: block;
 }
@@ -545,33 +453,37 @@ textarea {
 /* CUSTOM CHECKBOXES PARA MOBILE (FÁCIL TOQUE) */
 .checkbox-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
 .checkbox-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
   color: #334155;
+  padding: 8px 12px;
   background: #ffffff;
-  padding: 14px 16px;
-  border-radius: 12px;
   border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-  user-select: none;
+  border-radius: 10px;
+  transition: all 0.2s;
 }
 
-.checkbox-item input {
-  position: absolute;
-  opacity: 0;
+.checkbox-item:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+/* Customização da cor do checkbox */
+.checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
   cursor: pointer;
-  height: 0;
-  width: 0;
+  accent-color: #e11d48; /* Combina com o tema de hipertensão */
 }
 
 .custom-checkbox {
@@ -612,15 +524,22 @@ textarea {
 
 /* DIVISORES AUTOMÁTICOS COM MARGENS */
 .form-divider {
-  display: none; /* Removido para manter o fluxo limpo por sessões em caixas */
+  border: 0;
+  height: 1px;
+  background: #f1f5f9;
+  margin: 8px 0;
 }
 
 .mt-10 { margin-top: 10px; }
 .mt-15 { margin-top: 15px; }
 
 .alert-label-text {
-  color: #dc2626;
-  font-weight: 600;
+  color: #be123c; /* Rose 700 */
+}
+
+.alert-input-group input:focus {
+  border-color: #f43f5e;
+  box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.15);
 }
 
 /* BOTÃO DE SUBMISSÃO ESTILO PREMIUM */
@@ -631,61 +550,62 @@ textarea {
 }
 
 .btn-submit-health {
-  background-color: #2563eb;
+  background-color: #0ea5e9; /* Sky 500 */
   color: #ffffff;
   border: none;
-  padding: 16px 32px;
-  border-radius: 14px;
-  font-size: 16px;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
-  width: 100%; /* Mobile first: Ocupa toda a largura da tela */
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(37, 99, 235, 0.1);
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2), 0 2px 4px -2px rgba(14, 165, 233, 0.1);
 }
 
 .btn-submit-health:hover {
-  background-color: #1d4ed8;
+  background-color: #0284c7; /* Sky 600 */
   transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 6px 10px -1px rgba(14, 165, 233, 0.3), 0 2px 4px -2px rgba(14, 165, 233, 0.15);
 }
 
 .btn-submit-health:active {
-  transform: translateY(1px);
+  transform: translateY(0);
 }
 
 .btn-icon-white {
   filter: brightness(0) invert(1);
 }
 
-/* ANIMAÇÃO DE ENTRADA SUAVE (TRANSITION DO VUE) */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Animações para exibir/ocultar os cards dinâmicos */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
 }
-
-.fade-slide-enter-from,
-.fade-slide-leave-to {
-  opacity: 0;
+.slide-fade-leave-active {
+  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
   transform: translateY(-10px);
+  opacity: 0;
 }
 
-/* RESPONSIVIDADE EM SCREENS MAIORES (DESKTOP / TABLET) */
-@media (min-width: 640px) {
-  .panel-content {
-    padding: 32px;
-  }
-  
+@media (max-width: 768px) {
   .form-card-container {
-    padding: 32px;
+    padding: 24px;
+  }
+  .form-grid, .checkbox-grid {
+    grid-template-columns: 1fr;
   }
 
   .btn-submit-health {
     width: auto; /* Em telas maiores volta a ter tamanho próprio */
+  }
+  .btn-submit-health {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
