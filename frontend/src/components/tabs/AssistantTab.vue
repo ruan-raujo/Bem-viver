@@ -82,8 +82,6 @@ const submeterFormulario = () => {
           </div>
         </div>
 
-        <hr class="form-divider" />
-
         <div class="form-section">
           <h3 class="section-title">
             <span class="icon-wrapper teal"><i class="fas fa-notes-medical"></i></span> 
@@ -112,7 +110,7 @@ const submeterFormulario = () => {
                 </select>
               </div>
             </div>
-          </div>
+          </Transition>
 
           <Transition name="slide-fade">
             <div v-if="form.possuiDiabetes === true" class="dynamic-sub-card diabetes-theme">
@@ -164,8 +162,6 @@ const submeterFormulario = () => {
             </div>
           </Transition>
         </div>
-
-        <hr class="form-divider" />
 
         <div class="form-section">
           <h3 class="section-title">
@@ -247,6 +243,32 @@ const submeterFormulario = () => {
   font-size: 15px;
 }
 
+/* CONTAINER PRINCIPAL E ESTRUTURA GLOBAL */
+.panel-content {
+  padding: 16px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.greeting-section {
+  margin-bottom: 24px;
+}
+
+.greeting-text-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  margin-bottom: 6px;
+}
+
+.greeting-text-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* CARTÃO PRINCIPAL */
 .form-card-container {
   background: #ffffff;
   border-radius: 20px;
@@ -255,6 +277,7 @@ const submeterFormulario = () => {
   border: 1px solid #f1f5f9;
   margin-top: 24px;
   max-width: 850px;
+  margin: 0 auto;
 }
 
 .clinical-form {
@@ -306,13 +329,20 @@ const submeterFormulario = () => {
 }
 
 .input-group.full-width {
-  grid-column: span 2;
+  grid-column: 1 / -1;
 }
 
 label {
   font-size: 13.5px;
   font-weight: 500;
   color: #475569;
+  display: flex;
+  align-items: center;
+}
+
+.required-dot {
+  color: #ef4444;
+  margin-left: 3px;
 }
 
 .required {
@@ -338,7 +368,7 @@ select {
   color: #1e293b;
   background-color: #f8fafc;
   outline: none;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
 }
@@ -420,6 +450,7 @@ input::placeholder, textarea::placeholder {
   display: block;
 }
 
+/* CUSTOM CHECKBOXES PARA MOBILE (FÁCIL TOQUE) */
 .checkbox-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -427,6 +458,7 @@ input::placeholder, textarea::placeholder {
 }
 
 .checkbox-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -454,6 +486,43 @@ input::placeholder, textarea::placeholder {
   accent-color: #e11d48; /* Combina com o tema de hipertensão */
 }
 
+.custom-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  display: inline-block;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.checkbox-item:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.checkbox-item input:checked ~ .custom-checkbox {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.checkbox-item input:checked ~ .custom-checkbox::after {
+  content: "";
+  display: block;
+  margin-left: 6px;
+  margin-top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-item input:checked {
+  background: #eff6ff;
+}
+
+/* DIVISORES AUTOMÁTICOS COM MARGENS */
 .form-divider {
   border: 0;
   height: 1px;
@@ -473,6 +542,7 @@ input::placeholder, textarea::placeholder {
   box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.15);
 }
 
+/* BOTÃO DE SUBMISSÃO ESTILO PREMIUM */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -529,8 +599,9 @@ input::placeholder, textarea::placeholder {
   .form-grid, .checkbox-grid {
     grid-template-columns: 1fr;
   }
-  .input-group.full-width, .dynamic-sub-card {
-    grid-column: span 1;
+
+  .btn-submit-health {
+    width: auto; /* Em telas maiores volta a ter tamanho próprio */
   }
   .btn-submit-health {
     width: 100%;
